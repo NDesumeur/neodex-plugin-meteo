@@ -28,7 +28,7 @@ One row per day: the icon, the minimum and maximum temperatures on a shared bar 
 
 ## Data and sync
 
-Forecasts and air quality come from **Open-Meteo**, a free service with no account; these are the only sites contacted. Your cities are stored by NeoDex, backed up and synced between your PCs when sync is on.
+Forecasts and air quality come from **Open-Meteo**, a free service with no account; these are the only sites contacted. The plugin keeps nothing: your city is a NeoDex setting (Settings, “City for the weather”), backed up and synced between your PCs with your other settings when sync is on. Another city searched here is only used while you look.
 
 ## Install
 

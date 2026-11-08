@@ -28,7 +28,7 @@ Une ligne par jour : l'icône, les températures minimale et maximale sur une ba
 
 ## Données et synchronisation
 
-Les prévisions et la qualité de l'air viennent d'**Open-Meteo**, service libre et sans compte ; ce sont les seuls sites contactés. Tes villes sont enregistrées par NeoDex, sauvegardées et synchronisées entre tes PC si la synchro est activée.
+Les prévisions et la qualité de l'air viennent d'**Open-Meteo**, service libre et sans compte ; ce sont les seuls sites contactés. Le plugin ne garde rien : ta ville est un réglage de NeoDex (Paramètres, « Ville pour la météo »), sauvegardé et synchronisé entre tes PC avec tes autres réglages si la synchro est activée. Une autre ville cherchée ici sert le temps de la consultation.
 
 ## Installer
 
