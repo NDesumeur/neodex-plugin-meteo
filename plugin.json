@@ -3,7 +3,7 @@
   "name": "Météo",
   "version": "1.1.1",
   "author": "NDesumeur",
-  "description": "Prévisions sur 10 jours, heure par heure, et qualité de l'air pour ta ville (Open-Meteo).",
+  "description": "La météo de ta ville ou d'une autre : temps actuel avec ressenti, vent, humidité, pression, UV, lever et coucher du soleil et qualité de l'air ; les 36 prochaines heures en courbe avec le risque de pluie ; les prévisions sur 10 jours avec températures, pluie et vent. Données Open-Meteo, sans compte.",
   "icon": "icon.png",
   "entry": "index.js",
   "view": "meteo",
