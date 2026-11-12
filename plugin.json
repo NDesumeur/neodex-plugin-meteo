@@ -10,6 +10,7 @@
   "neobase": ">=4.0.0",
   "type": "app",
   "category": "Voyage",
+  "compatibility": ["windows", "linux"],
   "syncMode": "aucune",
   "syncInfo": "Rien dans le plugin : ta ville est un réglage de NeoDex (Paramètres), synchronisé avec tes autres réglages.",
   "mobile": false,
