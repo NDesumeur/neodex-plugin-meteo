@@ -12,7 +12,6 @@
  "Enter": "Enter",
  "Humidité": "Humidity",
  "Indice UV": "UV index",
- "La météo de ta ville ou d'une autre : temps actuel avec ressenti, vent, humidité, pression, UV, lever et coucher du soleil et qualité de l'air ; les 36 prochaines heures en courbe avec le risque de pluie ; les prévisions sur 10 jours avec températures, pluie et vent. Données Open-Meteo, sans compte.": "The weather for your city or another: current conditions with feels-like, wind, humidity, pressure, UV, sunrise and sunset and air quality; the next 36 hours as a chart with chance of rain; the 10-day forecast with temperatures, rain and wind. Open-Meteo data, no account needed.",
  "Lever": "Lift",
  "Ligne : température · barres : risque de pluie · survole pour le détail": "Line: temperature · bars: risk of rain · hover for details",
  "MA VILLE": "MY CITY",
@@ -38,5 +37,6 @@
  "Vent": "Wind",
  "Vent :": "Wind:",
  "Ville introuvable": "City not found",
- "Éclaircies": "Sunny spells"
+ "Éclaircies": "Sunny spells",
+ "La météo de ta ville ou d'une autre : temps actuel avec ressenti, vent, humidité, pression, UV, lever et coucher du soleil et qualité de l'air ; les 36 prochaines heures en courbe avec le risque de pluie ; les prévisions sur 10 jours avec températures, pluie et vent. Données Open-Meteo, sans compte. S'adapte à la taille de l'écran : largeur, grande température, heures et jours agrandis sur grand écran, graphique qui se redessine quand la fenêtre change ; sur petite fenêtre, la liste des 10 jours garde l'essentiel.": "The weather for your city or another: current conditions with feels-like, wind, humidity, pressure, UV, sunrise and sunset and air quality; the next 36 hours as a chart with chance of rain; the 10-day forecast with temperatures, rain and wind. Open-Meteo data, no account needed. Fits the screen size: width, big temperature, larger hours and days on big screens, a chart that redraws when the window changes; in a small window the 10-day list keeps the essentials."
 }
