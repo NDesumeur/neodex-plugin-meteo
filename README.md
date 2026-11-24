@@ -4,6 +4,10 @@ La météo de ta ville ou de n'importe quelle autre : le temps qu'il fait mainte
 
 *English version: [README.en.md](README.en.md)*
 
+## Pluie au quart d'heure et radar (nouveau en 1.3.0)
+
+Une phrase pour la pluie des 2 prochaines heures (« pluie vers 14 h 30, dans 15 min ») avec une barre par quart d'heure, et le radar de pluie animé des 2 dernières heures autour de ta ville.
+
 ## Maintenant
 
 En haut, le temps actuel : une icône (ensoleillé, éclaircies, couvert, brouillard, pluie, neige, orage, de jour ou de nuit), la température et le **ressenti**, puis le détail :
@@ -35,3 +39,9 @@ Les prévisions et la qualité de l'air viennent d'**Open-Meteo**, service libre
 Dans NeoDex : **NeoStore → À découvrir → Météo → Installer**.
 
 Développer un plugin : voir le [SDK NeoDex](https://github.com/NDesumeur/neodex-sdk).
+
+## La pluie au quart d’heure et le radar (1.3.0)
+
+- **Pluie dans les 2 heures** : une phrase claire (« Pluie modérée vers 14 h 30 (dans 15 min), jusque vers 15 h 15 », « Il pleut : ça s’arrête vers 16 h ») et huit barres, une par quart d’heure. Les données viennent de la même demande qu’avant à Open-Meteo : aucune requête de plus.
+- **Radar de pluie** : la carte autour de ta ville avec la pluie des 2 dernières heures, une image toutes les 10 min (RainViewer). **LECTURE** l’anime, le curseur choisit une image. Le point rose marque la ville.
+- Le radar montre le passé ; pour la suite, regarde la pluie au quart d’heure juste au-dessus.

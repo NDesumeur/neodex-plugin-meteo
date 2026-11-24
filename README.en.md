@@ -4,6 +4,10 @@ The weather for your city or any other: the current conditions, the next 36 hour
 
 *Version française : [README.md](README.md)*
 
+## Rain by quarter hour and radar (new in 1.3.0)
+
+A sentence for the rain of the next 2 hours (
+
 ## Now
 
 At the top, the current weather: an icon (sunny, partly cloudy, overcast, fog, rain, snow, storm, by day or night), the temperature and the **feels-like** temperature, then the details:
@@ -35,3 +39,9 @@ Forecasts and air quality come from **Open-Meteo**, a free service with no accou
 In NeoDex: **NeoStore → Discover → Météo → Install**.
 
 Building a plugin: see the [NeoDex SDK](https://github.com/NDesumeur/neodex-sdk).
+
+## Rain by quarter hour and the radar (1.3.0)
+
+- **Rain in the next 2 hours**: a clear sentence (“Moderate rain around 2:30 pm (in 15 min), until around 3:15 pm”, “It is raining: it stops around 4 pm”) and eight bars, one per quarter hour. The data comes from the same Open-Meteo request as before: no extra request.
+- **Rain radar**: the map around your city with the rain of the last 2 hours, one image every 10 min (RainViewer). **PLAY** animates it, the slider picks an image. The pink dot marks the city.
+- The radar shows the past; for what comes next, look at the rain by quarter hour just above.

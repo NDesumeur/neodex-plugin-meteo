@@ -1,7 +1,7 @@
 // Météo : ton appli d'origine (HTML et code inchangés), livrée en plugin.
 // Ses données sont dans le dossier du plugin, que NeoDex sauvegarde (synchro cloud et sauvegardes) ; à la première ouverture elle reprend ce que tu avais dans NeoDex.
 // Elle tourne dans le bac à sable de NeoDex, avec ses outils d'interface (ctx.host) et seulement les autorisations de son plugin.json.
-const HTML = "<div class=\"appWrap wide\">\n      <div class=\"agHead\"><span class=\"label\">Météo</span><input class=\"f\" id=\"mtCity\" placeholder=\"Autre ville… (Entrée)\" spellcheck=\"false\" style=\"width:clamp(200px,22vw,360px);margin-left:auto;font-size:16px;padding:9px 12px\"><button class=\"btn px\" id=\"mtHome\">MA VILLE</button></div>\n      <div class=\"sysCard px\" id=\"mtNow\"></div>\n      <div class=\"sysCard px\"><span class=\"label\">Prochaines 36 heures</span><div id=\"mtHours\"></div><div class=\"chart small mtCh\"><canvas id=\"mtChart\"></canvas><div class=\"chTip\"></div></div><div class=\"hint\">Ligne : température · barres : risque de pluie · survole pour le détail</div></div>\n      <div class=\"sysCard px\"><span class=\"label\">10 jours</span><div id=\"mtDays\"></div></div>\n    </div>";
+const HTML = "<div class=\"appWrap wide\">\n      <div class=\"agHead\"><span class=\"label\">Météo</span><input class=\"f\" id=\"mtCity\" placeholder=\"Autre ville… (Entrée)\" spellcheck=\"false\" style=\"width:clamp(200px,22vw,360px);margin-left:auto;font-size:16px;padding:9px 12px\"><button class=\"btn px\" id=\"mtHome\">MA VILLE</button></div>\n      <div class=\"sysCard px\" id=\"mtNow\"></div>\n      <div class=\"sysCard px mtSoon\"><span class=\"label\">Pluie dans les 2 heures</span><div id=\"mtSoonTxt\" class=\"mtSoonTxt\"></div><div id=\"mtSoonBars\" class=\"mtSoonBars\"></div></div>\n      <div class=\"sysCard px\"><div class=\"mtRadHead\"><span class=\"label\">Radar de pluie</span><button class=\"btn px\" id=\"mtPlay\">LECTURE</button><input type=\"range\" id=\"mtRadT\" min=\"0\" max=\"12\" value=\"12\"><span id=\"mtRadWhen\" class=\"mtRadWhen\"></span></div><div class=\"mtMap\" id=\"mtMap\"></div><div class=\"hint\">Les 2 dernières heures, une image toutes les 10 min (RainViewer) · le point rose : la ville · fond © Esri, HERE, Garmin, © OpenStreetMap</div></div>\n      <div class=\"sysCard px\"><span class=\"label\">Prochaines 36 heures</span><div id=\"mtHours\"></div><div class=\"chart small mtCh\"><canvas id=\"mtChart\"></canvas><div class=\"chTip\"></div></div><div class=\"hint\">Ligne : température · barres : risque de pluie · survole pour le détail</div></div>\n      <div class=\"sysCard px\"><span class=\"label\">10 jours</span><div id=\"mtDays\"></div></div>\n    </div>";
 /*CSS-MOVED*/ const CSS = `#mtNow{flex-direction:row;flex-wrap:wrap;gap:30px;align-items:center}
 .mtBig{display:flex;align-items:center;gap:24px}
 .mtTemp{font:clamp(46px,3.8vw,76px) var(--title);color:#fff}
@@ -24,7 +24,39 @@ const HTML = "<div class=\"appWrap wide\">\n      <div class=\"agHead\"><span cl
 .chTip{position:absolute;top:4px;pointer-events:none;display:none;padding:8px 10px;background:var(--win);box-shadow:0 0 0 2px var(--line2);font-size:13px;color:#fff;white-space:nowrap;line-height:1.5}
 .chTip b{display:block;font:10px var(--title);color:var(--muted);letter-spacing:1px;margin-bottom:4px}
 .chTip i{display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--c)}
+.mtSoonTxt{font-size:clamp(17px,1.25vw,22px);color:#fff;margin:6px 0 10px}
+.mtSoonBars{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;align-items:end;height:70px}
+.mtSoonBars div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;font-size:12px;color:var(--muted)}
+.mtSoonBars i{display:block;width:100%;background:#4aa8ff;min-height:2px;opacity:.9}.mtSoonBars i.dry{background:var(--line2,#3a2a6e)}
+.mtRadHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.mtRadHead .label{margin-right:auto}
+#mtRadT{width:clamp(140px,18vw,280px);accent-color:var(--pink)}.mtRadWhen{min-width:150px;color:#fff;font-size:clamp(13px,.9vw,16px)}
+.mtMap{position:relative;overflow:hidden;height:clamp(260px,42vh,520px);margin-top:10px;background:#0b0b14;box-shadow:inset 0 0 0 2px var(--line2,#3a2a6e)}
+.mtMap .ly{position:absolute;left:0;top:0}.mtMap img{position:absolute;display:block;user-select:none;pointer-events:none}
+.mtMap .rad img{opacity:.75}.mtMap .rad{display:none}.mtMap .rad.on{display:block}
+.mtDot{position:absolute;width:14px;height:14px;margin:-9px 0 0 -9px;left:50%;top:50%;border:2px solid var(--pink,#ff4fd8);box-shadow:0 0 0 2px #000,inset 0 0 0 2px #000;z-index:3}
 `;  // le style de ce plugin (il utilise les variables du thème de NeoDex)
+// la pluie des 2 prochaines heures en une phrase, d'après les quarts d'heure d'Open-Meteo (t : heures locales « 2026-11-24T14:30 », mm : pluie de chaque quart d'heure)
+const mtHM = t => t.slice(11, 13).replace(/^0/, '') + ' h ' + t.slice(14, 16);
+const mtSoonDur = m => m <= 0 ? 'maintenant' : 'dans ' + (m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''));
+const mtHow = mm => mm < 0.25 ? 'faible' : mm < 1 ? 'modérée' : 'forte';
+function mtSoon(t, mm, nowIso) {
+  const wet = v => v >= 0.1, now = new Date(nowIso), at = i => Math.max(0, Math.round((new Date(t[i]) - now) / 60000 / 5) * 5);
+  const n = Math.min(t.length, 8); if (!n) return '';
+  if (wet(mm[0])) {
+    const stop = mm.slice(0, n).findIndex(v => !wet(v)), peak = Math.max(...mm.slice(0, stop < 0 ? n : stop));
+    return stop < 0 ? 'Il pleut (' + mtHow(peak) + '), et ça continue pendant les 2 prochaines heures.' : 'Il pleut (' + mtHow(peak) + ') : ça s’arrête vers ' + mtHM(t[stop]) + ' (' + mtSoonDur(at(stop)) + ').';
+  }
+  const start = mm.slice(0, n).findIndex(wet); if (start < 0) return 'Pas de pluie dans les 2 prochaines heures.';
+  let end = mm.slice(start, n).findIndex(v => !wet(v)); end = end < 0 ? n : start + end;
+  return 'Pluie ' + mtHow(Math.max(...mm.slice(start, end))) + ' vers ' + mtHM(t[start]) + ' (' + mtSoonDur(at(start)) + ')' + (end < n ? ', jusque vers ' + mtHM(t[end]) : '') + '.';
+}
+// la tuile (x, y) de zoom z qui contient un lieu, avec sa partie décimale
+const mtTile = (lat, lon, z) => { const n = 2 ** z, r = lat * Math.PI / 180; return [(lon + 180) / 360 * n, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n]; };
+{ const T = ['2026-11-24T14:15', '2026-11-24T14:30', '2026-11-24T14:45', '2026-11-24T15:00', '2026-11-24T15:15', '2026-11-24T15:30', '2026-11-24T15:45', '2026-11-24T16:00'], N = '2026-11-24T14:20';
+  const a = mtSoon(T, [0, 0, 0.4, 0.6, 0, 0, 0, 0], N), b = mtSoon(T, [0.3, 0.2, 0, 0, 0, 0, 0, 0], N), c = mtSoon(T, [0, 0, 0, 0, 0, 0, 0, 0], N), d = mtSoon(T, [1.2, 1, 1, 1, 1, 1, 1, 1], N), [x, y] = mtTile(48.8566, 2.3522, 7);
+  console.assert(a === 'Pluie modérée vers 14 h 45 (dans 25 min), jusque vers 15 h 15.' && b === 'Il pleut (modérée) : ça s’arrête vers 14 h 45 (dans 25 min).' && c === 'Pas de pluie dans les 2 prochaines heures.'
+    && d === 'Il pleut (forte), et ça continue pendant les 2 prochaines heures.' && Math.floor(x) === 64 && Math.floor(y) === 44, 'météo : pluie et tuiles', a, b, c, d, x, y); }
+
 export default async function (ctx) {
   const view = ctx.view;
   if (!ctx.host) { view.textContent = "Ce plugin doit être approuvé par NeoDex pour s'ouvrir."; return; }
@@ -54,7 +86,7 @@ async function mtOpen() {
     const q = `latitude=${mt.lat}&longitude=${mt.lon}&timezone=auto`;
     const [f, aq] = await Promise.all([
       fetch(`https://api.open-meteo.com/v1/forecast?${q}&forecast_days=10&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,precipitation,cloud_cover,uv_index` +
-        '&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max').then(r => r.json()),
+        '&minutely_15=precipitation&forecast_minutely_15=8&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max').then(r => r.json()),
       fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=european_aqi,pm2_5,pm10,ozone`).then(r => r.json()).catch(() => null)]);
     mtRender(f, aq);
   } catch (e) { $('mtNow').replaceChildren(el('div', 'hint', 'Météo indisponible : ' + e.message)); }
@@ -71,6 +103,16 @@ function mtRender(f, aq) {
   stat("Qualité de l'air", aqLabel + (aq?.current ? ' (' + Math.round(aq.current.european_aqi) + ')' : ''));
   stat('Pluie (24 h)', (f.hourly.precipitation.slice(0, 24).reduce((a, b) => a + b, 0)).toFixed(1).replace('.', ',') + ' mm');
   $('mtNow').replaceChildren(big, info);
+  // la pluie des 2 prochaines heures
+  const m15 = f.minutely_15;
+  if (m15?.time?.length) {
+    $('mtSoonTxt').textContent = mtSoon(m15.time, m15.precipitation, c.time);
+    const top = Math.max(1, ...m15.precipitation.slice(0, 8));
+    $('mtSoonBars').replaceChildren(...m15.time.slice(0, 8).map((t, i) => { const v = m15.precipitation[i] || 0, b = el('div'), bar = el('i', v >= 0.1 ? '' : 'dry');
+      bar.style.height = Math.max(3, v / top * 46) + 'px'; b.title = mtHM(t) + ' : ' + v.toFixed(1).replace('.', ',') + ' mm'; b.append(bar, el('span', '', mtHM(t).replace(' h ', ':'))); return b; }));
+    $('mtSoonTxt').closest('.sysCard').hidden = false;
+  } else $('mtSoonTxt').closest('.sysCard').hidden = true;
+  radarOpen();
   // next 36 hours from now
   const now = f.hourly.time.findIndex(t => t >= c.time.slice(0, 13)), hours = f.hourly.time.slice(now, now + 36).map((t, i) => ({t, temp: f.hourly.temperature_2m[now + i], p: f.hourly.precipitation_probability[now + i], mm: f.hourly.precipitation[now + i], code: f.hourly.weather_code[now + i], day: f.hourly.is_day[now + i], wind: f.hourly.wind_speed_10m[now + i]}));
   $('mtHours').replaceChildren(...hours.map((h, i) => { const b = el('div', 'mtHour'); b.append(el('span', 'label', i ? hh(h.t).slice(0, 2) + ' h' : 'MAINT.'), mtIcon(h.code, h.day, 2), el('b', '', Math.round(h.temp) + '°'), el('span', 'mtRain' + (h.p >= 50 ? ' hi' : ''), h.p + ' %')); b.title = `${hh(h.t)} : ${Math.round(h.temp)}°, pluie ${h.p} % (${h.mm} mm), vent ${Math.round(h.wind)} km/h`; return b; }));
@@ -120,8 +162,50 @@ $('mtCity').onkeydown = async e => {
     mt = {name: r.name + (r.admin1 ? ', ' + r.admin1 : ''), lat: r.latitude, lon: r.longitude}; mtOpen();
   } catch (err) { toast('Recherche impossible : ' + err.message, true); }
 };
-$('mtHome').onclick = () => { mt = null; mtOpen(); };  // (non indenté : les textes sur plusieurs lignes restent exactement les tiens)
+$('mtHome').onclick = () => { mt = null; mtOpen(); };
+// ---- le radar : 5 × 3 tuiles de zoom 7 autour de la ville (fond Esri, pluie RainViewer, noms des villes par-dessus) ----
+const RZ = 7, RT = 256;
+let rad = null, radI = 12, radPlay = null;
+async function radarOpen(json) {
+  if (!mt?.lat) return;
+  try { json ??= await fetch('https://api.rainviewer.com/public/weather-maps.json').then(r => r.json()); } catch { $('mtRadWhen').textContent = 'radar indisponible'; return; }
+  const frames = (json.radar?.past || []).slice(-13); if (!frames.length) return;
+  const [x, y] = mtTile(mt.lat, mt.lon, RZ), cx = Math.floor(x), cy = Math.floor(y), cells = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -2; dx <= 2; dx++) cells.push([cx + dx, cy + dy, dx + 2, dy + 1]);
+  const layer = (url, cls) => { const d = el('div', 'ly ' + cls); for (const [tx, ty, gx, gy] of cells) { const i = el('img'); i.alt = ''; i.dataset.g = gx + ',' + gy; i.dataset.src = url(tx, ty); d.append(i); } return d; };
+  const base = layer((tx, ty) => 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/' + RZ + '/' + ty + '/' + tx, 'base');
+  const lab = layer((tx, ty) => 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/' + RZ + '/' + ty + '/' + tx, 'lab');
+  const rads = frames.map(fr => layer((tx, ty) => json.host + fr.path + '/' + RT + '/' + RZ + '/' + tx + '/' + ty + '/2/1_1.png', 'rad'));
+  rad = { x, y, cx, cy, frames, base, lab, rads };
+  const dot = el('div', 'mtDot'); dot.title = mt.name;
+  $('mtMap').replaceChildren(base, ...rads, lab, dot);
+  $('mtRadT').max = frames.length - 1; radI = frames.length - 1; $('mtRadT').value = radI;
+  radarPlace(); radarShow(radI);
+}
+function radarPlace() {  // la ville au centre ; une tuile fait la place pour que 3,2 tuiles tiennent dans la largeur (à peine agrandies : texte net)
+  if (!rad) return; const m = $('mtMap'), W = m.clientWidth, H = m.clientHeight; if (!W) return;
+  const T = Math.max(200, W / 3.2), ox = W / 2 - (rad.x - (rad.cx - 2)) * T, oy = H / 2 - (rad.y - (rad.cy - 1)) * T;
+  for (const img of m.querySelectorAll('img')) { const [gx, gy] = img.dataset.g.split(',').map(Number); Object.assign(img.style, { left: ox + gx * T + 'px', top: oy + gy * T + 'px', width: T + 'px', height: T + 'px' }); }
+  for (const ly of [rad.base, rad.lab]) for (const img of ly.children) if (!img.src) img.src = img.dataset.src;
+}
+function radarShow(i) {
+  if (!rad) return; radI = i;
+  rad.rads.forEach((ly, k) => { ly.classList.toggle('on', k === i); if (k === i) for (const img of ly.children) if (!img.src) img.src = img.dataset.src; });
+  const t = rad.frames[i].time * 1000, ago = Math.round((Date.now() - t) / 60000);
+  $('mtRadWhen').textContent = new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + (i === rad.frames.length - 1 ? ' · dernière image' : ' · il y a ' + ago + ' min');
+  $('mtRadT').value = i;
+}
+const radStop = () => { clearInterval(radPlay); radPlay = null; $('mtPlay').textContent = 'LECTURE'; };
+$('mtPlay').onclick = () => {
+  if (radPlay) return radStop();
+  if (!rad) return; for (const ly of rad.rads) for (const img of ly.children) if (!img.src) img.src = img.dataset.src;  // toutes les images, une fois
+  $('mtPlay').textContent = 'PAUSE'; let wait = 0;
+  radPlay = setInterval(() => { if (wait) return wait--; const n = (radI + 1) % rad.frames.length; radarShow(n); if (n === rad.frames.length - 1) wait = 3; }, 450);
+};
+$('mtRadT').oninput = e => { radStop(); radarShow(+e.target.value); };
+new ResizeObserver(radarPlace).observe($('mtMap'));  // (non indenté : les textes sur plusieurs lignes restent exactement les tiens)
   // ---- fin ----
-  view.__mt = {render: (f, aq, name) => { mt = {name}; mtRender(f, aq); }};  // pour l'auto-test
+  view.__mt = {render: (f, aq, name, lat, lon, radar) => { mt = {name, lat, lon}; mtRender(f, aq); if (radar) radarOpen(radar); }};  // pour l'auto-test
   ctx.onOpen(() => { mtOpen(); });
+  ctx.onClose?.(() => { clearInterval(radPlay); radPlay = null; });
 }
